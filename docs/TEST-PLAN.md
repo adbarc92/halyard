@@ -1,8 +1,7 @@
 # Halyard — Test Plan (pre-launch)
 
 > Source: `9c503c7` · 2026-06-15 · branch `feat/web-console-auth`.
-> Companion to [`CODEBASE-DIGEST.md`](CODEBASE-DIGEST.md) and
-> [`LAUNCH-PREP-CHECKLIST.md`](LAUNCH-PREP-CHECKLIST.md).
+> Companion to [`CODEBASE-DIGEST.md`](CODEBASE-DIGEST.md).
 > Current baseline (verified this session): `npm run typecheck` clean · `npm test` **317 pass**
 > · `npm run web:test` **74 pass**. Total **391 automated tests green**.
 

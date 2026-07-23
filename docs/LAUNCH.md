@@ -183,7 +183,7 @@ Re-flipping ON later returns to `live` (recorded `live#2`); publicity does **not
 
 ## Suggested T-minus schedule (with the campaign)
 
-Pair the technical steps with [CAMPAIGN.md](CAMPAIGN.md):
+Pair the technical steps with your launch publicity:
 
 | When | Technical | Publicity |
 |---|---|---|

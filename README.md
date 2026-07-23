@@ -311,7 +311,6 @@ and arming the opt-in toggles. Two runbooks cover it:
 (build → deploy → flip → `live` → publicity) in a temp dir — see **[docs/DEMO.md](docs/DEMO.md)**.
 
 When you're ready to go live, follow the ordered **[docs/LAUNCH.md](docs/LAUNCH.md)** runbook.
-(An agent picking up the live run cold should start with **[docs/LAUNCH-HANDOFF.md](docs/LAUNCH-HANDOFF.md)**.)
 
 ---
 

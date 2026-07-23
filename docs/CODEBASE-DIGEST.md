@@ -33,7 +33,7 @@ toggles. Feature-complete and certified green; the only material in-flight work 
 | Change publicity / channels | [`src/halyard/publicity/`](../src/halyard/publicity/) (`fanout.ts`, `channels.ts`, `select.ts`) |
 | Change config schema/validation | [`src/halyard/config/`](../src/halyard/config/) (`*.schema.ts`, `loader.ts`) |
 | Understand web-console auth | [`web/src/hooks.server.ts`](../web/src/hooks.server.ts), [`web/src/lib/server/auth.ts`](../web/src/lib/server/auth.ts), [`web/src/lib/server/loopback.js`](../web/src/lib/server/loopback.js) |
-| Wire a real launch (operator) | [`docs/LAUNCH.md`](LAUNCH.md) · readiness [`docs/LAUNCH-READINESS.md`](LAUNCH-READINESS.md) · cold-start [`docs/LAUNCH-HANDOFF.md`](LAUNCH-HANDOFF.md) |
+| Wire a real launch (operator) | [`docs/LAUNCH.md`](LAUNCH.md) · readiness [`docs/LAUNCH-READINESS.md`](LAUNCH-READINESS.md) |
 | Embed Halyard as a library | [`docs/INTEGRATION.md`](INTEGRATION.md) · root export [`src/halyard/index.ts`](../src/halyard/index.ts) |
 
 ## Architecture
@@ -158,8 +158,7 @@ Package manager: **npm** (`package-lock.json`; `web` is a workspace). Pulled fro
   non-loopback or any `x-forwarded-*` = refused (bind guard exits, hook 403s); token set =
   `/login` session cookie for browsers, `Authorization: Bearer` for proxies/machines. Three
   critique rounds resolved 24 findings (CSRF/origin on http-loopback, Secure-on-https only,
-  random opaque session ids, open-redirect `next` sanitization). Design:
-  [`docs/superpowers/specs/2026-06-15-web-console-auth-design.md`](superpowers/specs/2026-06-15-web-console-auth-design.md).
+  random opaque session ids, open-redirect `next` sanitization).
 - **`npm run <script> -- --flag x` can swallow args in some shells.** Fall back to
   `npx tsx scripts/<file>.ts --flag x`.
 - **Operator drives all outward/irreversible actions** — the real `halyard flip`, tag pushes,
