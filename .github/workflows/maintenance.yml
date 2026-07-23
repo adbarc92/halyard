@@ -1,0 +1,56 @@
+# Scheduled maintenance event sources (M7).
+#
+# Runs daily and feeds the same proposal bus + approval surface as the coordinator:
+#   - cert-expiry alerts (alert only — renewal stays manual)
+#   - platform-deadline alerts (SDK mins / target-API cutoffs)
+#   - Renovate dependency updates (patch/minor auto-merge per config; rest proposed)
+#
+# Slower cadence than reconcile — these change on the order of days, not minutes.
+name: maintenance
+
+on:
+  schedule:
+    - cron: "0 13 * * *" # daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write # required to merge Renovate PRs when HALYARD_LIVE_MERGE is on
+
+concurrency:
+  group: halyard-maintenance
+  cancel-in-progress: false
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+
+      - run: npm ci
+
+      - name: Run maintenance watchers
+        env:
+          # Provider creds resolve from the secret store at runtime; never config.
+          HALYARD_CERT_APPLE_DISTRIBUTION: ${{ secrets.CERT_APPLE_DISTRIBUTION_NOTAFTER }}
+          HALYARD_CERT_APPLE_PUSH_KEY: ${{ secrets.CERT_APPLE_PUSH_KEY_NOTAFTER }}
+          HALYARD_CERT_AUTHENTICODE: ${{ secrets.CERT_AUTHENTICODE_NOTAFTER }}
+          HALYARD_DEADLINES: ${{ secrets.PLATFORM_DEADLINES_JSON }}
+          HALYARD_DEP_UPDATES: ${{ secrets.RENOVATE_UPDATES_JSON }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Opt-in auto-merge of patch/minor Renovate PRs (per app.yml automerge + repo).
+          # Set the repo variable HALYARD_LIVE_MERGE=1 to arm it; unset = dry-run (safe default).
+          HALYARD_LIVE_MERGE: ${{ vars.HALYARD_LIVE_MERGE }}
+          # The mobile approval surface — maintenance alerts must reach your phone.
+          HALYARD_APPROVAL_WEBHOOK: ${{ secrets.HALYARD_APPROVAL_WEBHOOK }}
+        # No --apps: the CLI discovers every apps/<slug>/app.yml.
+        run: npm run halyard -- maintenance
+
+      - name: Commit state changes
+        run: |
+          bash scripts/commit-state.sh "chore(state): maintenance"

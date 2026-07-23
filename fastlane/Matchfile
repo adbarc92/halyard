@@ -1,0 +1,7 @@
+# fastlane match (code signing). The match repo URL is a secret reference resolved to
+# MATCH_REPO env at runtime by the workflow — never written here.
+git_url(ENV["MATCH_REPO"])
+storage_mode("git")
+type("appstore")
+app_identifier([ENV["HALYARD_BUNDLE_ID"]].compact)
+readonly(true)

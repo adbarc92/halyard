@@ -1,0 +1,104 @@
+# Halyard iOS + Android lanes. Invoked by the surface adapters:
+#   bundle exec fastlane ios     test | build | upload
+#   bundle exec fastlane android test | build | upload
+#
+# Identity/distribution parameters arrive as HALYARD_* env from the adapter; secrets
+# (match repo, ASC API key, Play service-account JSON) arrive as env from the workflow's
+# secret store. Project specifics (Xcode scheme, Gradle module) live here, with the app,
+# not in halyard config.
+default_platform(:ios)
+
+SCHEME = ENV["HALYARD_SCHEME"] || "App"
+
+platform :ios do
+  before_all do
+    setup_ci if ENV["CI"]
+  end
+
+  desc "Run unit tests (the deterministic gate keys off this lane's exit code)"
+  lane :test do
+    run_tests(scheme: SCHEME)
+  end
+
+  desc "Sign (match) and archive (gym) a release build"
+  lane :build do
+    match(type: "appstore", readonly: true)
+    gym(
+      scheme: SCHEME,
+      export_method: "app-store",
+      output_directory: "build",
+      clean: true,
+    )
+  end
+
+  desc "Upload to TestFlight (pilot), submit an App Store version for review, and emit the ASC build id"
+  lane :upload do
+    pilot(
+      app_identifier: ENV["HALYARD_BUNDLE_ID"],
+      groups: [ENV["HALYARD_TESTFLIGHT_GROUP"]].compact,
+      distribute_external: true,
+      skip_submission: false,
+      skip_waiting_for_build_processing: false,
+    )
+    build_id = lane_context[SharedValues::LATEST_TESTFLIGHT_BUILD_NUMBER]
+
+    # Submit an App Store *version* for review. The coordinator's review poll reads the App
+    # Store version state (appStoreState) to drive uploaded → in_review → shipped_dark — a
+    # TestFlight-only upload never reaches a reviewable state, so iOS would otherwise stall at
+    # `uploaded`. automatic_release:false keeps release control with the flag flip: the build
+    # is approved/"dark" while the feature stays behind its flag (that's `shipped_dark`).
+    #
+    # NOTE: the App Store version needs metadata/screenshots present in App Store Connect (true
+    # after the app's first release); skip_metadata/skip_screenshots avoid re-uploading them,
+    # and skip_binary_upload reuses the build pilot just uploaded.
+    upload_to_app_store(
+      app_identifier: ENV["HALYARD_BUNDLE_ID"],
+      app_version: ENV["HALYARD_VERSION"],
+      build_number: build_id,
+      submit_for_review: true,
+      automatic_release: false,
+      force: true, # no interactive HTML preview
+      skip_binary_upload: true,
+      skip_metadata: true,
+      skip_screenshots: true,
+      precheck_include_in_app_purchases: false,
+      submission_information: { add_id_info_uses_idfa: false },
+    )
+
+    # The adapter parses this line to record external_refs.asc_build_id.
+    sh("echo HALYARD_ASC_BUILD_ID=#{build_id}")
+  end
+end
+
+GRADLE_MODULE = ENV["HALYARD_GRADLE_MODULE"] || "app"
+
+platform :android do
+  desc "Run unit tests (the deterministic gate keys off this lane's exit code)"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Assemble a release App Bundle"
+  lane :build do
+    gradle(task: "clean")
+    gradle(task: "bundle", build_type: "Release", flags: "--no-daemon")
+  end
+
+  desc "Upload the AAB to the configured Play track (supply) and emit the version code"
+  lane :upload do
+    # The Play service-account JSON is provided via env (SUPPLY_JSON_KEY_DATA) by the
+    # workflow from the secret store — never written to config.
+    upload_to_play_store(
+      package_name: ENV["HALYARD_PACKAGE"],
+      track: ENV["HALYARD_PLAY_TRACK"] || "internal",
+      aab: "#{GRADLE_MODULE}/build/outputs/bundle/release/#{GRADLE_MODULE}-release.aab",
+      release_status: "completed",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+    # The adapter parses this line to record external_refs.play_version_code. Projects
+    # that derive a numeric versionCode should echo it here instead of the version name.
+    sh("echo HALYARD_PLAY_VERSION_CODE=#{ENV['HALYARD_VERSION']}")
+  end
+end

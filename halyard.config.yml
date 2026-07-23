@@ -1,0 +1,44 @@
+version: 1
+org: { name: Example }
+
+coordinator:
+  backend: git # git | service
+  state_dir: ./state # git-backed launch + release records
+  reconcile_cron: "*/20 * * * *"
+  dedup: true # enforce (release_id + transition) idempotency
+
+notifications:
+  # The mobile-reachable approval surface. A secret *reference*, never the URL.
+  approval_channel_ref: SECRET:HALYARD_APPROVAL_WEBHOOK
+
+drafting:
+  provider: anthropic
+  model: claude-opus-4-8 # verify current string before use (M5/M6)
+  api_key_ref: SECRET:ANTHROPIC_API_KEY
+  voice_canon: ./canon/voice/ # accreting corpus of APPROVED posts
+
+channels: # registry; each declares trust class + gate
+  blog:
+    class: owned
+    gate: auto # owned → light gate, may auto-publish
+    publish: { type: http, endpoint_ref: SECRET:BLOG_PUBLISH_URL }
+  waitlist_email:
+    class: owned
+    gate: auto
+    publish: { type: http, endpoint_ref: SECRET:EMAIL_SEND_URL }
+  x:
+    class: third_party
+    gate: human # third_party → post button stays human; draft + stage only
+    publish: { type: manual }
+  linkedin:
+    class: third_party
+    gate: human
+    publish: { type: manual }
+  hn:
+    class: third_party
+    gate: human
+    requires_tier: launch # only fires for launch-tier launches
+    publish: { type: manual }
+
+defaults:
+  announce_policy: per_surface

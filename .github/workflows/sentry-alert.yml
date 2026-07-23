@@ -1,0 +1,46 @@
+# Out-of-band crash triage (design §5).
+#
+# The latency-sensitive flag-kill path must NOT wait for the 20-minute reconcile cron. Wire
+# a Sentry alert rule (directly, or via a small relay that signs the request) to POST a
+# repository_dispatch of type "sentry-alert" to this repo. Halyard then runs triage at
+# once — it classifies the spike and pushes a proposal to your phone in seconds, not on the
+# next sweep. It still only *proposes* (flag-kill / hotfix / ignore); the human acts.
+name: sentry-alert
+
+on:
+  repository_dispatch:
+    types: [sentry-alert]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: halyard-reconcile # share the reconcile lock so triage never races state/ writes
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+
+      - run: npm ci
+
+      - name: Triage
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The mobile approval surface — the spike must reach your phone immediately.
+          HALYARD_APPROVAL_WEBHOOK: ${{ secrets.HALYARD_APPROVAL_WEBHOOK }}
+        # No --apps: the CLI discovers every apps/<slug>/app.yml.
+        run: npm run halyard -- triage
+
+      - name: Commit state changes
+        run: |
+          bash scripts/commit-state.sh "chore(state): sentry-alert triage"

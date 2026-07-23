@@ -1,0 +1,43 @@
+# Demo app config for `npm run demo` — a self-contained, hands-on local end-to-end run.
+# It lives under scripts/ (NOT apps/) on purpose: it is loaded explicitly by scripts/demo.ts
+# and is never auto-discovered, so the example repo stays single-app (aurora) and its free-tier
+# workflows keep working. Web-only, no-op build, local_dir deploy, file-backed everything.
+version: 1
+app: { name: Demo, slug: demo }
+
+version_scheme:
+  semver: true
+  tag_pattern: "{surface}-v{version}"
+
+flags:
+  provider: http # no api_url → the git-backed file client (local; no provider needed)
+  api_key_ref: SECRET:DEMO_FLAG_PROVIDER_KEY
+  naming: "launch.{slug}.{feature}"
+  graduate_after_days: 30
+
+changelog: { source: conventional_commits, since: last_tag }
+
+surfaces:
+  web:
+    enabled: true
+    build: { command: "node build.mjs", output_dir: dist } # build.mjs is written into the temp workdir
+    test: { command: "node -e 0" } # exits 0 → the deterministic test gate passes
+    deploy: { target: local_dir, dir: preview } # copies dist → preview/<release_id>
+    prod_url: https://demo.example
+    promote_gate: true # web rests at `uploaded` → `live` on the flag flip
+
+triage:
+  sentry: { project_ref: SECRET:DEMO_SENTRY, org: demo }
+  severity_thresholds: { crash_free_users_pct: 99.5 }
+  classify: agent
+
+channels:
+  enabled: [blog, x] # blog = owned (auto-publish via file publisher); x = third-party (staged)
+  overrides: {}
+
+launch_defaults: { announce_policy: per_surface }
+
+maintenance:
+  cert_watch: []
+  platform_deadlines: { calendar_ref: SECRET:DEMO_CAL }
+  dependencies: { tool: renovate, automerge: [patch, minor] }

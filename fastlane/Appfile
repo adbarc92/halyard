@@ -1,0 +1,5 @@
+# All values come from env injected by the adapter (HALYARD_*) and the secret store.
+app_identifier(ENV["HALYARD_BUNDLE_ID"])
+team_id(ENV["HALYARD_TEAM_ID"])
+# ASC API auth is provided via APP_STORE_CONNECT_API_KEY_* env (set from secrets in CI),
+# so no apple_id / password is stored here.

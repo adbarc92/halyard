@@ -1,0 +1,68 @@
+version: 1
+app: { name: Aurora, slug: aurora }
+
+version_scheme:
+  semver: true
+  tag_pattern: "{surface}-v{version}" # e.g. ios-v1.4.0
+
+flags:
+  provider: http # generic REST flag provider (HttpFlagClient); LaunchDarkly et al. implement the same FlagClient port
+  api_url: https://flags.example.com # {api_url}/flags/{key}; omit to use the git-backed file client
+  api_key_ref: SECRET:AURORA_FLAG_PROVIDER_KEY # resolved from env at runtime, never stored
+  naming: "launch.{slug}.{feature}" # launch flags are born OFF
+  graduate_after_days: 30 # propose flag removal after this stable window
+
+changelog: { source: conventional_commits, since: last_tag }
+
+payments:
+  provider: stripe
+  api_key_ref: SECRET:STRIPE_API_KEY_AURORA # verify-only; Halyard never moves money
+
+surfaces:
+  ios:
+    enabled: true
+    bundle_id: com.example.aurora
+    asc_app_id: "1234567890"
+    team_id: "ABCDE12345"
+    signing:
+      method: match # fastlane match
+      match_repo_ref: SECRET:MATCH_REPO
+      asc_api_key_ref: SECRET:ASC_API_KEY
+    testflight_group: external
+    review_poll_cron: "*/30 * * * *"
+  android:
+    enabled: true
+    package: com.example.aurora
+    track: internal
+    service_account_ref: SECRET:PLAY_SERVICE_ACCOUNT
+  web:
+    enabled: true
+    build: { command: "npm ci && npm run build", output_dir: dist }
+    test: { command: "npm test" } # deterministic gate = this command's exit code
+    deploy: { target: cloudflare_pages, project: aurora-web }
+    prod_url: https://aurora.app
+    promote_gate: true # opt-in manual promote-to-prod
+  desktop:
+    enabled: false # flip on to fold the Tauri pipeline in
+    build: { command: "npm run tauri build", output_dir: "src-tauri/target/release/bundle" }
+    test: { command: "npm test" }
+    deploy: { target: github_releases, repo: example/aurora, tag_pattern: "desktop-v{version}" }
+
+triage:
+  sentry: { project_ref: SECRET:SENTRY_DSN_AURORA, org: example }
+  severity_thresholds: { crash_free_users_pct: 99.5 }
+  classify: agent # agent proposes severity + {flag-kill|hotfix|ignore}
+
+channels:
+  enabled: [blog, waitlist_email, x, linkedin]
+  overrides: {}
+
+launch_defaults: { announce_policy: per_surface }
+
+maintenance:
+  cert_watch: # ALERTING only — renewal auth stays manual
+    - { kind: apple_distribution }
+    - { kind: apple_push_key }
+    - { kind: authenticode }
+  platform_deadlines: { calendar_ref: SECRET:DEADLINES_CAL }
+  dependencies: { tool: renovate, automerge: [patch, minor], repo: example/aurora }

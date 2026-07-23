@@ -1,0 +1,60 @@
+{
+  "name": "halyard",
+  "version": "0.1.0",
+  "description": "Event-driven release + publicity coordinator for a multi-app shop.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "halyard": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "workspaces": ["web"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "halyard": "tsx src/halyard/cli.ts",
+    "demo": "tsx scripts/demo.ts",
+    "verify:launch": "tsx scripts/verify-launch.ts",
+    "issue:license": "tsx scripts/issue-license.ts",
+    "smoke:flags": "tsx scripts/smoke/flag-roundtrip.ts",
+    "prepare": "npm run build",
+    "web:dev": "npm run build && npm run dev --workspace web",
+    "web:build": "npm run build && npm run build --workspace web",
+    "web:start": "cross-env HOST=127.0.0.1 node web/server.js",
+    "web:test": "npm run test --workspace web"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.101.0",
+    "yaml": "^2.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "cross-env": "^7.0.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "overrides": {
+    "svelte": "^5.0.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0"
+  }
+}

@@ -1,0 +1,68 @@
+# Scheduled coordinator loop (M2).
+#
+# The coordinator is a projection: this job periodically polls external truth via the
+# registered reconcile sources, applies any deltas as legal + idempotent transitions,
+# and commits the updated state/ records back. Idempotent by construction — a pass with
+# no external change writes nothing.
+#
+# Cron mirrors coordinator.reconcile_cron in halyard.config.yml ("*/20 * * * *").
+name: reconcile
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: halyard-reconcile # never let two reconciles race on state/
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+
+      - run: npm ci
+
+      - name: Reconcile
+        env:
+          # Poller/agent/notifier credentials resolve from secrets at runtime — the env
+          # var NAMES must match what the code reads (asc-client reads ASC_KEY_ID/…,
+          # sentry-client reads SENTRY_AUTH_TOKEN, the drafters read ANTHROPIC_API_KEY,
+          # the notifier reads HALYARD_APPROVAL_WEBHOOK). Unset secrets resolve to empty
+          # and the code degrades gracefully (file notifier / template drafter).
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The mobile approval surface — without this the scheduled loop can't reach
+          # your phone (it would silently fall back to the file notifier).
+          HALYARD_APPROVAL_WEBHOOK: ${{ secrets.HALYARD_APPROVAL_WEBHOOK }}
+          # Owned-channel auto-publish targets (only used when HALYARD_LIVE_PUBLISH is set).
+          HALYARD_LIVE_PUBLISH: "1"
+          BLOG_PUBLISH_URL: ${{ secrets.BLOG_PUBLISH_URL }}
+          EMAIL_SEND_URL: ${{ secrets.EMAIL_SEND_URL }}
+          # Live flag provider. The reconcile loop must observe flag truth from the same
+          # real provider the human flips, or flag-poll reads the git-backed file client and
+          # never sees the flip (the launch moment). The provider base URL is per-app config
+          # (apps/<slug>/app.yml flags.api_url); only the token is a secret, resolved from
+          # the app's configured api_key_ref (here SECRET:AURORA_FLAG_PROVIDER_KEY). Without
+          # the token (or with api_url unset) chooseFlagClient falls back to the file client.
+          HALYARD_LIVE_FLAGS: "1"
+          AURORA_FLAG_PROVIDER_KEY: ${{ secrets.AURORA_FLAG_PROVIDER_KEY }}
+        # No --apps: the CLI discovers every apps/<slug>/app.yml.
+        run: npm run halyard -- reconcile
+
+      - name: Commit state changes
+        run: |
+          bash scripts/commit-state.sh "chore(state): reconcile"

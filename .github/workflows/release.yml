@@ -1,0 +1,137 @@
+# Reusable release workflow (M1 web, M3 ios).
+#
+# Surface-agnostic: parameterized by `app` + `surface`. Drives the same spine the CLI
+# runs locally — tag -> build -> test (deterministic gate) -> deploy -> write record —
+# then commits the updated state/ record back (the git-backed coordinator).
+#
+# iOS runs on macOS with Fastlane; secrets (match repo, ASC API key) are injected from
+# the secret store into env — never written to config. iOS lands at `uploaded`; the
+# scheduled reconcile loop's ASC review poll drives it to `shipped_dark` hands-off.
+name: release
+
+on:
+  push:
+    tags:
+      - "*-v*" # tag_pattern: {surface}-v{version} (or {app}-{surface}-v{version} for multi-app)
+  workflow_dispatch:
+    inputs:
+      app: { description: "app slug", required: true, type: string }
+      surface: { description: "surface (web|ios|android|desktop)", required: true, type: string }
+      version: { description: "version", required: true, type: string }
+  workflow_call:
+    inputs:
+      app: { required: true, type: string }
+      surface: { required: true, type: string }
+      version: { required: true, type: string }
+
+permissions:
+  contents: write
+
+# Per-tag, so a re-pushed tag doesn't run twice; different tags still run in parallel —
+# the state commit-back rebases + retries, so concurrent releases don't lose writes.
+concurrency:
+  group: halyard-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.coords.outputs.app }}
+      surface: ${{ steps.coords.outputs.surface }}
+      version: ${{ steps.coords.outputs.version }}
+      runner: ${{ steps.coords.outputs.runner }}
+    steps:
+      - name: Resolve release coordinates + runner
+        id: coords
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            tag="${GITHUB_REF_NAME}"            # {app-}{surface}-v{version}, e.g. ios-v1.4.0 or aurora-ios-v1.4.0
+            # Require an {…-}{surface}-v{version} shape; reject anything else loudly.
+            if [[ "$tag" != *-v* ]]; then
+              echo "::error::tag '$tag' is not {surface}-v{version} (optionally {app}-{surface}-v{version})"; exit 1
+            fi
+            left="${tag%%-v*}"                  # {app-}{surface}
+            version="${tag#*-v}"
+            surface="${left##*-}"               # last dash segment is the surface
+            if [[ "$left" == *-* ]]; then
+              app="${left%-*}"                  # multi-app shop: app is the tag prefix
+            else
+              app="${{ vars.HALYARD_APP }}"     # single-app back-compat: app from repo var
+            fi
+          else
+            surface="${{ inputs.surface }}"
+            version="${{ inputs.version }}"
+            app="${{ inputs.app }}"
+          fi
+          if [ -z "$app" ] || [ -z "$version" ]; then
+            echo "::error::could not resolve app/version (app='$app' version='$version')"; exit 1
+          fi
+          # Validate the surface against the known set and pick the runner — fail fast
+          # rather than letting a bogus surface fall through to a late CLI error.
+          case "$surface" in
+            ios)               runner="macos-14" ;;   # gym needs Xcode/macOS
+            android|web|desktop) runner="ubuntu-latest" ;;
+            *) echo "::error::unknown surface '$surface' from tag/input"; exit 1 ;;
+          esac
+          {
+            echo "app=$app"
+            echo "surface=$surface"
+            echo "version=$version"
+            echo "runner=$runner"
+          } >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: setup
+    runs-on: ${{ needs.setup.outputs.runner }}
+    timeout-minutes: 45 # iOS gym/match builds on macOS can be slow
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+
+      - run: npm ci
+
+      # iOS + Android both build via Fastlane → Ruby toolchain.
+      - name: Set up Fastlane (iOS / Android)
+        if: ${{ needs.setup.outputs.surface == 'ios' || needs.setup.outputs.surface == 'android' }}
+        uses: ruby/setup-ruby@v1
+        with: { ruby-version: "3.3", bundler-cache: true }
+
+      # Android-only: JDK for the Gradle build (the Android SDK is preinstalled on
+      # ubuntu runners).
+      - name: Set up JDK (Android)
+        if: ${{ needs.setup.outputs.surface == 'android' }}
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+
+      - name: Run release
+        env:
+          # Web deploy creds (Cloudflare) — resolved from secrets, never config.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # iOS signing + upload creds — resolved from secrets, never config.
+          MATCH_REPO: ${{ secrets.MATCH_REPO }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          # Android Play upload creds (supply reads the service-account JSON from env).
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_SERVICE_ACCOUNT }}
+        run: |
+          npm run halyard -- release run \
+            --app "${{ needs.setup.outputs.app }}" \
+            --surface "${{ needs.setup.outputs.surface }}" \
+            --version "${{ needs.setup.outputs.version }}" \
+            --commit "${GITHUB_SHA}"
+
+      # Commits onto main even though this job runs on the pushed tag (detached HEAD),
+      # and rebases + retries so a concurrent state push can't clobber it.
+      - name: Commit state record
+        run: |
+          bash scripts/commit-state.sh "chore(state): ${{ needs.setup.outputs.surface }} ${{ needs.setup.outputs.version }} release record"

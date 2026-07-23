@@ -1,0 +1,530 @@
+/* ─────────────────────────────────────────────────────────────
+   Halyard Console — Industrial Terminal Design System
+   Fonts: system-font stack (mono + sans) — no external requests
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Design tokens ── */
+:root {
+  --bg:        #0e1014;
+  --bg-raised: #14171d;
+  --bg-hover:  #1a1e26;
+  --border:    #2a2f3a;
+  --border-dim:#1e2230;
+  --text:      #d4d8e2;
+  --text-dim:  #7a8099;
+  --text-mute: #4a5068;
+  --accent:    #e8a020;
+  --accent-dim:#a06c10;
+
+  /* state badge palette */
+  --state-live:        #1a3d2e;
+  --state-live-text:   #4ade80;
+  --state-live-border: #166534;
+
+  --state-dead:        #3d1a1a;
+  --state-dead-text:   #f87171;
+  --state-dead-border: #7f1d1d;
+
+  --state-amber:        #3d2e10;
+  --state-amber-text:   #fbbf24;
+  --state-amber-border: #78350f;
+
+  --state-blue:        #1a2840;
+  --state-blue-text:   #60a5fa;
+  --state-blue-border: #1e3a5f;
+
+  --state-neutral:        #1e2230;
+  --state-neutral-text:   #94a3b8;
+  --state-neutral-border: #2a3048;
+
+  --radius-badge: 2px;
+  --radius-card:  3px;
+
+  --nav-h: 48px;
+  --page-max: 1200px;
+  --gap: 24px;
+}
+
+/* ── Reset / Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  padding-top: var(--nav-h);
+  min-height: 100vh;
+}
+
+/* ── Typography ── */
+h1 {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+}
+
+h2 {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+}
+
+h3 {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+p { color: var(--text-dim); line-height: 1.65; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.12s;
+}
+a:hover { color: #f0b840; text-decoration: underline; }
+
+code, .mono {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.85em;
+  color: var(--text);
+  background: var(--bg-raised);
+  padding: 0.1em 0.4em;
+  border-radius: 2px;
+}
+
+small { font-size: 0.8rem; color: var(--text-dim); }
+em    { font-style: italic; color: var(--text-dim); }
+
+/* ── Navigation ── */
+.site-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--gap);
+  gap: 0;
+  z-index: 100;
+}
+
+.site-nav .nav-brand {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-right: 1.5rem;
+  text-decoration: none;
+}
+.site-nav .nav-brand:hover { color: #f0b840; text-decoration: none; }
+
+.site-nav .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+}
+
+.site-nav .nav-links a {
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 0 0.875rem;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+}
+.site-nav .nav-links a:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+.site-nav .nav-links a[aria-current="page"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.site-nav .nav-health {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-mute);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+.site-nav .nav-health .health-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--state-dead-text);
+  flex-shrink: 0;
+}
+.site-nav .nav-health.ok .health-dot { background: var(--state-live-text); }
+.site-nav .nav-health .health-root {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-mute);
+}
+
+/* ── Page layout ── */
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--gap);
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--border-dim);
+}
+.page-header h1 { margin-bottom: 0; }
+.page-header .page-actions {
+  display: flex; gap: 0.5rem; margin-left: auto; align-items: center;
+}
+
+/* ── Alert / banner ── */
+.alert {
+  background: #1e1010;
+  border: 1px solid #5a1e1e;
+  border-left: 3px solid var(--state-dead-text);
+  border-radius: var(--radius-card);
+  padding: 0.875rem 1rem;
+  margin-bottom: 1.25rem;
+  color: var(--text-dim);
+}
+.alert h2 {
+  color: var(--state-dead-text);
+  margin-bottom: 0.4rem;
+}
+.alert ul { list-style: none; padding: 0; }
+.alert ul li {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #2a1515;
+}
+.alert ul li:last-child { border-bottom: none; }
+
+.degraded-banner {
+  background: #1a1408;
+  border: 1px solid #4a3008;
+  border-left: 3px solid var(--state-amber-text);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 1rem;
+  margin-bottom: var(--gap);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.degraded-banner code {
+  background: #2a1e08;
+  color: var(--state-amber-text);
+}
+
+/* ── State badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  padding: 0.15em 0.55em;
+  border-radius: var(--radius-badge);
+  border: 1px solid;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.badge-live    { background: var(--state-live);    color: var(--state-live-text);    border-color: var(--state-live-border); }
+.badge-dead    { background: var(--state-dead);    color: var(--state-dead-text);    border-color: var(--state-dead-border); }
+.badge-amber   { background: var(--state-amber);   color: var(--state-amber-text);   border-color: var(--state-amber-border); }
+.badge-blue    { background: var(--state-blue);    color: var(--state-blue-text);    border-color: var(--state-blue-border); }
+.badge-neutral { background: var(--state-neutral); color: var(--state-neutral-text); border-color: var(--state-neutral-border); }
+
+/* ── Buttons ── */
+.btn {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  padding: 0.45em 1em;
+  border-radius: var(--radius-badge);
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #0e1014;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn-primary:hover:not(:disabled) { background: #f0b840; border-color: #f0b840; }
+.btn-primary:active:not(:disabled) { background: #d49018; border-color: #d49018; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: var(--border);
+}
+.btn-secondary:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); border-color: #3a4050; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text); }
+
+.btn-danger {
+  background: var(--state-dead);
+  color: var(--state-dead-text);
+  border-color: var(--state-dead-border);
+}
+.btn-danger:hover:not(:disabled) { background: #5a2020; border-color: #9f2020; }
+
+.btn-success {
+  background: var(--state-live);
+  color: var(--state-live-text);
+  border-color: var(--state-live-border);
+}
+.btn-success:hover:not(:disabled) { background: #1f4d38; border-color: #1d6b3e; }
+
+.btn-sm {
+  font-size: 0.72rem;
+  padding: 0.3em 0.75em;
+}
+
+/* ── Table ── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.data-table th {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border-dim);
+  vertical-align: middle;
+  color: var(--text);
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover td { background: var(--bg-hover); }
+.data-table .td-id {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.78rem;
+}
+.data-table .td-dim { color: var(--text-dim); }
+.data-table .td-mute { color: var(--text-mute); font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace; font-size: 0.75rem; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.125rem;
+  margin-bottom: 0.625rem;
+}
+.card:last-child { margin-bottom: 0; }
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+.card-title {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+.card-meta {
+  display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;
+}
+.card-body {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 0.625rem;
+}
+.card-footer {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 0.75rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--border-dim);
+}
+
+/* ── Textarea ── */
+.field-textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-badge);
+  color: var(--text);
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  padding: 0.6em 0.75em;
+  resize: vertical;
+  transition: border-color 0.12s;
+  min-height: 72px;
+}
+.field-textarea:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+}
+.field-textarea::placeholder { color: var(--text-mute); }
+
+/* ── Flags toggle row ── */
+.flag-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-card);
+  margin-bottom: 0.375rem;
+}
+.flag-row:last-child { margin-bottom: 0; }
+.flag-key {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--text);
+  flex: 1;
+}
+.flag-state { margin-right: 0.25rem; }
+.flag-actions { display: flex; gap: 0.375rem; }
+
+/* ── Detail pages ── */
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-dim);
+}
+.detail-meta-item {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.detail-meta-item strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.timeline {
+  list-style: none;
+  border-left: 1px solid var(--border);
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+}
+.timeline li {
+  position: relative;
+  padding: 0.35rem 0 0.35rem 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.timeline li::before {
+  content: '';
+  position: absolute;
+  left: -1.375rem;
+  top: 0.65rem;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 1px solid var(--bg);
+}
+.timeline li .tl-state {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text);
+  margin-right: 0.4rem;
+}
+.timeline li .tl-by { color: var(--accent); }
+.timeline li .tl-at { color: var(--text-mute); font-size: 0.72rem; font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace; }
+
+/* ── Section label ── */
+.section-label {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin: 1.5rem 0 0.625rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border-dim);
+}
+.section-label:first-of-type { margin-top: 0; }
+
+/* ── Empty state ── */
+.empty-state {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--text-mute);
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  border: 1px dashed var(--border-dim);
+  border-radius: var(--radius-card);
+}
+
+/* ── Utility ── */
+.text-dim   { color: var(--text-dim); }
+.text-mute  { color: var(--text-mute); }
+.text-accent{ color: var(--accent); }
+.mono       { font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', 'Segoe UI Mono', 'Consolas', 'Fira Mono', monospace; }
+.flex       { display: flex; }
+.items-center { align-items: center; }
+.gap-sm     { gap: 0.5rem; }
+.mt-1       { margin-top: 0.75rem; }
+.mb-1       { margin-bottom: 0.75rem; }
