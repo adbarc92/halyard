@@ -205,7 +205,9 @@ halyard approve --proposal <id> [--text "final copy"]   # records approval; neve
     service-account secret. Validate with `preflight --probe off` (config-only) then `preflight`
     (live) — see [Going live](#going-live).
 - `release run` exits non-zero on a dead release; `reconcile`/`maintenance` exit non-zero
-  (and emit `::warning::` annotations) if any poller/provider errored.
+  (and emit `::warning::` annotations) if any poller/provider errored. A `maintenance`
+  source that simply isn't configured (no cert secret, no deadlines calendar, no Renovate
+  feed) is *skipped* — counted in `skipped`, annotated `::notice::`, and not an error.
 - `launch create` without `--narrative` drafts a seed from recent Conventional Commits for
   you to edit.
 - `approve` of a third-party `social_post` feeds the final copy into the voice canon — but

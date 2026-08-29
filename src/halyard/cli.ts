@@ -219,8 +219,12 @@ async function maintenanceCmd(argv: string[]): Promise<number> {
 
   // Fail loud on provider failures, same as reconcile — a broken cert/deadline/deps
   // source turns the scheduled run red instead of passing green while doing nothing.
+  // An UNCONFIGURED source is not a failure: these are optional, and an app that simply
+  // has no Authenticode cert or no deadlines calendar is skipped, not errored.
   const errors = [...certs.errors, ...deadlines.errors, ...deps.errors];
+  const skipped = [...certs.skipped, ...deadlines.skipped, ...deps.skipped];
   for (const err of errors) console.error(`::warning::maintenance: ${err}`);
+  for (const skip of skipped) console.error(`::notice::maintenance: skipped — ${skip}`);
 
   console.log(
     JSON.stringify(
@@ -229,6 +233,7 @@ async function maintenanceCmd(argv: string[]): Promise<number> {
         deadline_alerts: deadlines.created.length,
         deps_auto_merged: deps.merged.length,
         deps_proposed: deps.proposed.length,
+        skipped: skipped.length,
         errors: errors.length,
       },
       null,

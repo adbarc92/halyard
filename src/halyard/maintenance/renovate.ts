@@ -3,6 +3,7 @@ import type { Proposal } from "../contracts/proposal.schema.js";
 import { reconcileProposal } from "../coordinator/proposals.js";
 import type { Backend } from "../coordinator/ports.js";
 import type { Notifier } from "../publicity/notify.js";
+import { isNotConfigured } from "./types.js";
 import type { DependencyUpdate, DependencyUpdateProvider, MergeClient, UpdateType } from "./types.js";
 
 /**
@@ -25,6 +26,8 @@ export interface RenovateResult {
   merged: DependencyUpdate[];
   proposed: Proposal[];
   errors: string[];
+  /** Apps with no configured dependency-update feed. Reported, but not a failure. */
+  skipped: string[];
 }
 
 export async function runRenovate(deps: RenovateDeps): Promise<RenovateResult> {
@@ -32,6 +35,7 @@ export async function runRenovate(deps: RenovateDeps): Promise<RenovateResult> {
   const merged: DependencyUpdate[] = [];
   const proposed: Proposal[] = [];
   const errors: string[] = [];
+  const skipped: string[] = [];
 
   for (const app of deps.apps) {
     const automerge = new Set<UpdateType>(app.maintenance.dependencies.automerge);
@@ -41,8 +45,15 @@ export async function runRenovate(deps: RenovateDeps): Promise<RenovateResult> {
       updates = await deps.provider.listUpdates(app.app.slug);
     } catch (err) {
       const message = `deps ${app.app.slug}: ${err instanceof Error ? err.message : String(err)}`;
-      errors.push(message);
-      log(`[deps] ${message}`);
+      if (isNotConfigured(err)) {
+        // No feed for this app — skip it entirely, including the stale-resolver below, so
+        // an unconfigured source never closes proposals a configured run had opened.
+        skipped.push(message);
+        log(`[deps] ${message} (not configured — skipped)`);
+      } else {
+        errors.push(message);
+        log(`[deps] ${message}`);
+      }
       continue;
     }
 
@@ -109,5 +120,5 @@ export async function runRenovate(deps: RenovateDeps): Promise<RenovateResult> {
     }
   }
 
-  return { merged, proposed, errors };
+  return { merged, proposed, errors, skipped };
 }

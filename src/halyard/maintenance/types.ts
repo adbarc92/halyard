@@ -52,6 +52,29 @@ export interface MergeClient {
   merge(repo: string, pr: number): Promise<void>;
 }
 
+/**
+ * "This source isn't configured here" — not a failure. Cert notAfter dates, the deadlines
+ * calendar and the Renovate feed are all OPTIONAL: an app that doesn't ship a signed
+ * desktop build has no Authenticode cert, and the public example app has none of them. A
+ * provider throws this when its input is absent, and the watchers record it as `skipped`
+ * rather than `errors`, so an unconfigured source doesn't turn a scheduled run red.
+ *
+ * It is only for absence. A configured-but-broken source — a 500 from the cert API, a
+ * malformed HALYARD_DEADLINES payload, a merge that failed — throws an ordinary Error and
+ * still counts as an error, so the fail-closed property holds for real failures.
+ */
+export class NotConfiguredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotConfiguredError";
+  }
+}
+
+/** True for the "not configured" sentinel above; every other throw is a real failure. */
+export function isNotConfigured(err: unknown): err is NotConfiguredError {
+  return err instanceof NotConfiguredError;
+}
+
 const DAY_MS = 86_400_000;
 
 /** Whole days from `now` until `dateISO`, rounded DOWN — conservative for alerting (6.9

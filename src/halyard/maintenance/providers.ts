@@ -12,6 +12,7 @@ import type {
   PlatformDeadline,
   PlatformDeadlineProvider,
 } from "./types.js";
+import { NotConfiguredError } from "./types.js";
 
 // Env/secret-sourced JSON is untrusted input — validate it against a schema before it
 // reaches a proposal body or (for dependency updates) the auto-merge path, rather than
@@ -42,7 +43,7 @@ const DependencyUpdatesSchema = z.array(
 export class EnvCertProvider implements CertExpiryProvider {
   async getCertStatus(_app: string, kind: CertKind): Promise<CertStatus> {
     const notAfter = process.env[`HALYARD_CERT_${kind.toUpperCase()}`];
-    if (!notAfter) throw new Error(`HALYARD_CERT_${kind.toUpperCase()} not set`);
+    if (!notAfter) throw new NotConfiguredError(`HALYARD_CERT_${kind.toUpperCase()} not set`);
     return { kind, notAfter };
   }
 }
@@ -50,7 +51,7 @@ export class EnvCertProvider implements CertExpiryProvider {
 export class EnvDeadlineProvider implements PlatformDeadlineProvider {
   async getDeadlines(_app: string): Promise<PlatformDeadline[]> {
     const raw = process.env.HALYARD_DEADLINES;
-    if (!raw) throw new Error("HALYARD_DEADLINES not set");
+    if (!raw) throw new NotConfiguredError("HALYARD_DEADLINES not set");
     return DeadlinesSchema.parse(JSON.parse(raw));
   }
 }
@@ -58,7 +59,7 @@ export class EnvDeadlineProvider implements PlatformDeadlineProvider {
 export class EnvDependencyProvider implements DependencyUpdateProvider {
   async listUpdates(_app: string): Promise<DependencyUpdate[]> {
     const raw = process.env.HALYARD_DEP_UPDATES;
-    if (!raw) throw new Error("HALYARD_DEP_UPDATES not set");
+    if (!raw) throw new NotConfiguredError("HALYARD_DEP_UPDATES not set");
     return DependencyUpdatesSchema.parse(JSON.parse(raw));
   }
 }

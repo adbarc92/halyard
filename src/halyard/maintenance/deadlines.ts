@@ -3,7 +3,7 @@ import type { Proposal } from "../contracts/proposal.schema.js";
 import { reconcileProposal } from "../coordinator/proposals.js";
 import type { Backend } from "../coordinator/ports.js";
 import type { Notifier } from "../publicity/notify.js";
-import { daysUntil, urgency, type PlatformDeadlineProvider } from "./types.js";
+import { daysUntil, isNotConfigured, urgency, type PlatformDeadlineProvider } from "./types.js";
 
 /**
  * Platform-deadline watcher. Surfaces upcoming SDK-minimum / target-API cutoffs from the
@@ -23,6 +23,8 @@ export interface DeadlineDeps {
 export interface DeadlineWatchResult {
   created: Proposal[];
   errors: string[];
+  /** Apps with no configured deadlines calendar. Reported, but not a failure. */
+  skipped: string[];
 }
 
 export async function runDeadlineWatch(deps: DeadlineDeps): Promise<DeadlineWatchResult> {
@@ -30,6 +32,7 @@ export async function runDeadlineWatch(deps: DeadlineDeps): Promise<DeadlineWatc
   const window = deps.warnWithinDays ?? 60;
   const created: Proposal[] = [];
   const errors: string[] = [];
+  const skipped: string[] = [];
 
   for (const app of deps.apps) {
     let deadlines;
@@ -37,8 +40,13 @@ export async function runDeadlineWatch(deps: DeadlineDeps): Promise<DeadlineWatc
       deadlines = await deps.provider.getDeadlines(app.app.slug);
     } catch (err) {
       const message = `deadline ${app.app.slug}: ${err instanceof Error ? err.message : String(err)}`;
-      errors.push(message);
-      log(`[deadline] ${message}`);
+      if (isNotConfigured(err)) {
+        skipped.push(message);
+        log(`[deadline] ${message} (not configured — skipped)`);
+      } else {
+        errors.push(message);
+        log(`[deadline] ${message}`);
+      }
       continue;
     }
 
@@ -72,5 +80,5 @@ export async function runDeadlineWatch(deps: DeadlineDeps): Promise<DeadlineWatc
     }
   }
 
-  return { created, errors };
+  return { created, errors, skipped };
 }
