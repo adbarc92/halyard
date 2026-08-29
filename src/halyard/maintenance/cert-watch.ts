@@ -3,7 +3,7 @@ import type { Proposal } from "../contracts/proposal.schema.js";
 import { reconcileProposal } from "../coordinator/proposals.js";
 import type { Backend } from "../coordinator/ports.js";
 import type { Notifier } from "../publicity/notify.js";
-import { daysUntil, urgency, type CertExpiryProvider } from "./types.js";
+import { daysUntil, isNotConfigured, urgency, type CertExpiryProvider } from "./types.js";
 
 /**
  * Cert-expiry watcher. ALERTING ONLY — halyard never renews a certificate; the renewal
@@ -24,6 +24,8 @@ export interface CertWatchResult {
   created: Proposal[];
   /** Provider failures, isolated per cert — surfaced so the scheduled run can fail loud. */
   errors: string[];
+  /** Certs with no configured expiry source. Reported, but not a failure — see NotConfiguredError. */
+  skipped: string[];
 }
 
 export async function runCertWatch(deps: CertWatchDeps): Promise<CertWatchResult> {
@@ -31,6 +33,7 @@ export async function runCertWatch(deps: CertWatchDeps): Promise<CertWatchResult
   const window = deps.warnWithinDays ?? 30;
   const created: Proposal[] = [];
   const errors: string[] = [];
+  const skipped: string[] = [];
 
   for (const app of deps.apps) {
     for (const cert of app.maintenance.cert_watch) {
@@ -67,11 +70,16 @@ export async function runCertWatch(deps: CertWatchDeps): Promise<CertWatchResult
         }
       } catch (err) {
         const message = `cert ${app.app.slug}/${cert.kind}: ${err instanceof Error ? err.message : String(err)}`;
-        errors.push(message);
-        log(`[cert] ${message}`);
+        if (isNotConfigured(err)) {
+          skipped.push(message);
+          log(`[cert] ${message} (not configured — skipped)`);
+        } else {
+          errors.push(message);
+          log(`[cert] ${message}`);
+        }
       }
     }
   }
 
-  return { created, errors };
+  return { created, errors, skipped };
 }
