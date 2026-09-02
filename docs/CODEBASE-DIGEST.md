@@ -5,8 +5,9 @@
 > root manifests, all launch docs, the web-auth design, and mapping `src/`, `web/`, `tests/`,
 > `.github/`, `apps/` (structure read; a few internals inferred and marked).
 > Purpose of this digest: **ownership / extension** (guide the operator-facing launch and any
-> further hardening). Verified: `npm run typecheck` clean; `npm test` **317 pass**; `npm run
-> web:test` **74 pass**.
+> further hardening). Verified 2026-09-01: `npm run typecheck` clean; `npm test` **460 pass**;
+> `npm run web:test` **91 pass**. *(Previously recorded as 317 + 74; the suite grew and the docs
+> did not follow.)*
 
 ## TL;DR
 Halyard is an **event-driven, git-backed release + publicity coordinator** for a multi-app
@@ -139,8 +140,8 @@ Package manager: **npm** (`package-lock.json`; `web` is a workspace). Pulled fro
 - Install: `npm install` (runs `prepare` → `npm run build`)
 - Typecheck: `npm run typecheck` *(verified clean)*
 - Build: `npm run build` (`tsc -p tsconfig.build.json` → `dist/` ESM + d.ts)
-- Test (core): `npm test` → **317 pass** *(verified)*; coverage gate: `npm run test:coverage`
-- Test (web): `npm run web:test` → **74 pass** *(verified)*
+- Test (core): `npm test` → **460 pass** *(re-verified 2026-09-01)*; coverage gate: `npm run test:coverage`
+- Test (web): `npm run web:test` → **91 pass** *(re-verified 2026-09-01)*
 - Dry runs: `npm run verify:launch` (fakes) · `npm run demo` (real adapters, temp dir)
 - Web: `npm run web:dev` (Vite) · `npm run web:build` + `npm run web:start` (prod, loopback)
 - CLI: `npm run halyard -- <args>` or `tsx src/halyard/cli.ts <args>`
