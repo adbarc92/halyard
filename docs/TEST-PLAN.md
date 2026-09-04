@@ -1,9 +1,10 @@
 # Halyard — Test Plan (pre-launch)
 
 > Source: `9c503c7` · 2026-06-15 · branch `feat/web-console-auth`.
+> **Counts re-verified 2026-09-01 on `main`** — they had drifted by 160 tests.
 > Companion to [`CODEBASE-DIGEST.md`](CODEBASE-DIGEST.md).
-> Current baseline (verified this session): `npm run typecheck` clean · `npm test` **317 pass**
-> · `npm run web:test` **74 pass**. Total **391 automated tests green**.
+> Current baseline (re-verified 2026-09-01): `npm run typecheck` clean · `npm test` **460 pass**
+> (91 files) · `npm run web:test` **91 pass** (11 files). Total **551 automated tests green**.
 
 This plan is the **test ladder** from cheapest/safest to most realistic. The first three rungs
 require no credentials and gate every change; rungs 4–6 are arming/live and are gambled against
@@ -15,15 +16,15 @@ the *smallest possible blast radius* first. Nothing user-visible happens before 
 | Check | Command | Pass signal |
 |---|---|---|
 | Typecheck (src + tests) | `npm run typecheck` | exit 0, 0 errors |
-| Core suite | `npm test` | 317 pass |
+| Core suite | `npm test` | 460 pass |
 | Coverage gate | `npm run test:coverage` | passes the configured threshold ([`vitest.config.ts`](../vitest.config.ts)) |
-| Web suite | `npm run web:test` | 74 pass |
+| Web suite | `npm run web:test` | 91 pass |
 | Build | `npm run build` | `dist/` emits ESM + `.d.ts` |
 
 CI (`.github/workflows/ci.yml`) runs typecheck + `test:coverage` on every PR and push to `main`.
 **Gate:** all green before merging the web-auth branch or tagging any release.
 
-## Rung 1 — Offline spine suite (what the 317 tests prove)
+## Rung 1 — Offline spine suite (what the 460 tests prove)
 Zero credentials; every external port uses its git-backed / template / fake fallback. Coverage
 by area (file pointers in [`tests/`](../tests/)):
 
@@ -97,7 +98,7 @@ queue`, keep rollback (`flip --state off`) one command away.
 ---
 
 ## Exit criteria for "launch-ready"
-- [ ] Rungs 0–2 fully green (391 automated tests + dry runs).
+- [ ] Rungs 0–2 fully green (551 automated tests + dry runs).
 - [ ] Web-auth branch: suite green **and** the 7 manual auth checks pass, then merged via PR.
 - [ ] Rung 3 smoke passed for **every integration the first launch actually uses** (skip ones not shipping).
 - [ ] `halyard preflight` (live) exits 0 for the target app.

@@ -2,7 +2,7 @@
 
 Halyard runs fully offline by default: every external integration has a git-backed / template
 / dry-run fallback, so the whole spine is exercisable with no credentials (that's what the
-317-test suite + `npm run demo` do). **Going live** means wiring the real providers behind those ports and
+460-test suite + `npm run demo` do). **Going live** means wiring the real providers behind those ports and
 arming the opt-in toggles. This doc is the checklist for that, plus how to verify each path
 *without* gambling a real launch.
 
@@ -89,7 +89,7 @@ Run through this before flipping a flag ON.
 
 A ladder from cheapest/safest to most realistic:
 
-1. **Offline suite** (`npm test`, 317 tests + coverage gate) — proves the spine, the gates, the
+1. **Offline suite** (`npm test`, 460 tests + coverage gate) — proves the spine, the gates, the
    five invariants, and the re-entrant loops with zero credentials. Run on every change.
 2. **Dry runs (no accounts):** `npm run verify:launch` walks the full spine against **fakes**
    (fast pass/fail of the projection); `npm run demo` walks it with the **real** adapters
