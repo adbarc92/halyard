@@ -11,8 +11,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - MIT `LICENSE`. ([#1](https://github.com/adbarc92/halyard/pull/1))
 - This changelog.
+- `halyard status` rows carry `commit_sha`, so a release can be traced back to the commit it was
+  cut from without opening its record file.
 
 ### Fixed
+
+- The CLI no longer exits 0 with no output when reached through `npm link`. The entrypoint guard
+  now compares real paths, since the link path in `argv[1]` never matched the resolved module path.
 
 - An unconfigured *optional* event source is now treated as **skipped**, not as an error, so a
   maintenance run no longer fails for a source the operator deliberately left unset.

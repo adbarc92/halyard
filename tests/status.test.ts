@@ -33,6 +33,13 @@ describe("status summary", () => {
     expect(summarizeRelease(d, now()).stuck).toBe(false);
   });
 
+  it("surfaces the commit a release was cut from, so status alone can trace it back", () => {
+    const r = newRelease({ releaseId: "rel_aurora_web_0.0.82", app: "aurora", surface: "web", version: "0.0.82" });
+    expect(summarizeRelease(r, now()).commit_sha).toBeNull();
+    const withSha = { ...r, external_refs: { ...r.external_refs, commit_sha: "c2ce937" } };
+    expect(summarizeRelease(withSha, now()).commit_sha).toBe("c2ce937");
+  });
+
   it("web uploaded waits on the flag flip; ios uploaded waits on App Store review", () => {
     const web = newRelease({ releaseId: "rel_a_web_1", app: "a", surface: "web", version: "1" });
     const ios = newRelease({ releaseId: "rel_a_ios_1", app: "a", surface: "ios", version: "1" });

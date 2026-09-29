@@ -18,6 +18,8 @@ export interface ReleaseStatus {
   flag: string | null;
   review_status: string | null;
   flag_state: string | null;
+  /** The commit the release was cut from — the one ref that ties it back to a merged change. */
+  commit_sha: string | null;
   /** In-flight or rolled back — i.e. not a settled `live`/`dead`. Drives `status --stuck`. */
   stuck: boolean;
 }
@@ -68,6 +70,7 @@ export function summarizeRelease(release: Release, now: string): ReleaseStatus {
     flag: release.flag,
     review_status: strRef(release.external_refs, "review_status"),
     flag_state: strRef(release.external_refs, "flag_state"),
+    commit_sha: strRef(release.external_refs, "commit_sha"),
     stuck: release.state !== "live" && release.state !== "dead",
   };
 }
