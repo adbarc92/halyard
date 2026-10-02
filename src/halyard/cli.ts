@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadAppConfig, loadOrgConfig } from "./config/loader.js";
@@ -676,9 +677,21 @@ export async function dispatch(args: string[]): Promise<number> {
 
 // Run only when invoked as the entrypoint (`tsx cli.ts ...` or the built `halyard` bin),
 // never on import — so the module can be loaded by tests or an embedding host without
-// executing a command or calling process.exit.
-const invokedDirectly = process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (invokedDirectly) {
+// executing a command or calling process.exit. Compare real paths: through `npm link`,
+// argv[1] is the link path while import.meta.url is already resolved (GAP-S12).
+export function isEntrypoint(argv1: string | undefined, moduleUrl: string): boolean {
+  if (argv1 === undefined) return false;
+  const real = (p: string): string => {
+    try {
+      return realpathSync(p);
+    } catch {
+      return resolve(p);
+    }
+  };
+  return real(argv1) === real(fileURLToPath(moduleUrl));
+}
+
+if (isEntrypoint(process.argv[1], import.meta.url)) {
   dispatch(process.argv.slice(2))
     .then((code) => process.exit(code))
     .catch((err) => {

@@ -34,3 +34,7 @@ jobs:
 
       - name: Test (with coverage gate)
         run: npm run test:coverage
+
+      # The tests call dispatch in-process; this runs the packed, installed bin (GAP-S12).
+      - name: Installed-bin smoke
+        run: npm run smoke:bin
