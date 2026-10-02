@@ -11,6 +11,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // Keep the operator's licensing env out of the suite (see the root vitest.config.ts).
+    env: { HALYARD_SELF_HOST: "", HALYARD_LICENSE_KEY: "" },
     alias: { "$app/paths": fileURLToPath(new URL("./tests/mocks/app-paths.ts", import.meta.url)) },
   },
 });
