@@ -1,10 +1,10 @@
 # Halyard — Test Plan (pre-launch)
 
 > Source: `9c503c7` · 2026-06-15 · branch `feat/web-console-auth`.
-> **Counts re-verified 2026-09-01 on `main`** — they had drifted by 160 tests.
+> **Counts re-verified 2026-10-12 on `main`** (CI, clean checkout).
 > Companion to [`CODEBASE-DIGEST.md`](CODEBASE-DIGEST.md).
-> Current baseline (re-verified 2026-09-01): `npm run typecheck` clean · `npm test` **460 pass**
-> (91 files) · `npm run web:test` **91 pass** (11 files). Total **551 automated tests green**.
+> Current baseline (re-verified 2026-10-12): `npm run typecheck` clean · `npm test` **470 pass**, 5 skipped
+> (93 files) · `npm run web:test` **91 pass** (11 files). Total **561 automated tests green**.
 
 This plan is the **test ladder** from cheapest/safest to most realistic. The first three rungs
 require no credentials and gate every change; rungs 4–6 are arming/live and are gambled against
@@ -16,7 +16,7 @@ the *smallest possible blast radius* first. Nothing user-visible happens before 
 | Check | Command | Pass signal |
 |---|---|---|
 | Typecheck (src + tests) | `npm run typecheck` | exit 0, 0 errors |
-| Core suite | `npm test` | 460 pass |
+| Core suite | `npm test` | 470 pass |
 | Coverage gate | `npm run test:coverage` | passes the configured threshold ([`vitest.config.ts`](../vitest.config.ts)) |
 | Web suite | `npm run web:test` | 91 pass |
 | Build | `npm run build` | `dist/` emits ESM + `.d.ts` |
@@ -24,14 +24,14 @@ the *smallest possible blast radius* first. Nothing user-visible happens before 
 CI (`.github/workflows/ci.yml`) runs typecheck + `test:coverage` on every PR and push to `main`.
 **Gate:** all green before merging the web-auth branch or tagging any release.
 
-## Rung 1 — Offline spine suite (what the 460 tests prove)
+## Rung 1 — Offline spine suite (what the 470 tests prove)
 Zero credentials; every external port uses its git-backed / template / fake fallback. Coverage
 by area (file pointers in [`tests/`](../tests/)):
 
 | Area | Representative tests | What it proves |
 |---|---|---|
 | State machine | `state-machine.test.ts`, `record-store.test.ts` | Legal transitions, dedup, re-entry (`in_review#2`, `live#2`) |
-| Release lifecycle | `release-runner.test.ts`, `deploy-failure.test.ts`, `m3-shipped-dark.test.ts` | build/test gates, `dead` on failure, dark-resting state |
+| Release lifecycle | `release-runner.test.ts`, `gate-fail-closed.test.ts`, `deploy-failure.test.ts`, `m3-shipped-dark.test.ts` | build/test gates, `dead` on failure, dark-resting state |
 | Reconcile | `reconcile.test.ts`, `reconcile-cli.test.ts`, `full-reconcile.test.ts`, `poll-schedule.test.ts` | idempotent polling, **source error isolation**, full cycle |
 | Launch / flag | `launch-split.test.ts`, `m4-flag-flip.test.ts`, `flag-poll.test.ts`, `graduation.test.ts` | launch≠release, flip→live, flag-removal proposal after window |
 | Publicity | `m5-publicity.test.ts`, `publicity-*.test.ts`, `announce-policy.test.ts`, `channel-gate.test.ts` | **owned auto vs third-party human gate**, announce policies, resilience |
@@ -98,7 +98,7 @@ queue`, keep rollback (`flip --state off`) one command away.
 ---
 
 ## Exit criteria for "launch-ready"
-- [ ] Rungs 0–2 fully green (551 automated tests + dry runs).
+- [ ] Rungs 0–2 fully green (561 automated tests + dry runs).
 - [ ] Web-auth branch: suite green **and** the 7 manual auth checks pass, then merged via PR.
 - [ ] Rung 3 smoke passed for **every integration the first launch actually uses** (skip ones not shipping).
 - [ ] `halyard preflight` (live) exits 0 for the target app.
