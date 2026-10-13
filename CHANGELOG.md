@@ -13,6 +13,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - This changelog.
 - `halyard status` rows carry `commit_sha`, so a release can be traced back to the commit it was
   cut from without opening its record file.
+- `halyard reconcile` prints the app slugs it discovered as `apps`. Before, an empty project
+  reported only `scanned: 0` (a count of release records), which read as "discovered nothing".
+- `tests/gate-fail-closed.test.ts`: plants a red build or test gate on every surface and through
+  the CLI, and asserts the release ends `dead` and the deploy step never runs.
+- A **Limits** section in the README, stating what a failed gate does and does not stop.
 
 ### Fixed
 

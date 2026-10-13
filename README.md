@@ -126,6 +126,35 @@ command backs it:
 - **Config, not fixtures.** The repo ships one example app (`apps/aurora`) and a spine that
   discovers `apps/<slug>/app.yml` at runtime — you bring your own app catalogue as config.
 
+### Limits
+
+What the claims above do **not** cover, checked against the code rather than the intent:
+
+- **A failed gate kills a release, not a launch.** There are two gates — the build command's
+  exit code and the test command's exit code ([`gates.ts`](src/halyard/coordinator/gates.ts)).
+  When either is non-zero the release for *that surface* ends at the terminal `dead` state,
+  the deploy step never runs, and `release run` exits non-zero. Proof, on all four surfaces
+  and through the CLI: `npx vitest run tests/gate-fail-closed.test.ts`
+  ([`gate-fail-closed.test.ts`](tests/gate-fail-closed.test.ts)). A *launch* has no state of
+  its own: it is not marked failed, its other surfaces' releases carry on, and `halyard flip`
+  checks no release state — flipping the flag ON still takes the surviving surfaces `live`
+  (the `dead` one stays `dead`).
+- **`dead` is terminal in the record, but the runner does not refuse to re-run it.** The state
+  machine rejects every transition out of `dead`. `release run`, however, decides on the gates
+  of the *current* run only: re-running an already-`dead` release whose build and tests now
+  pass **does deploy**, while the record stays `dead` and the command still exits non-zero.
+  Treat `dead` as final and cut a new version instead of re-running one.
+- **A `dead` record written in CI is not committed back.** In `release.yml` the commit-state
+  step is skipped when `release run` fails, so the red workflow run — not a record on `main` —
+  is the durable trace of a gated-out release.
+- **App registration is `apps/<slug>/app.yml` under the working directory, and nowhere else.**
+  `reconcile`, `maintenance`, `triage`, `preflight` and `payments verify` discover that
+  directory only (`reconcile` prints the slugs it found as `apps`); they take no `--apps-dir`,
+  so a catalogue kept outside `apps/` is invisible to them. In a clean checkout that is the one
+  example app, with no release records — `reconcile` reports `"apps": ["aurora"]` and
+  `"scanned": 0`. Acting across more than one app needs a Pro licence or the self-host
+  entitlement.
+
 ---
 
 ## Five invariants (held everywhere)
@@ -204,6 +233,8 @@ halyard approve --proposal <id> [--text "final copy"]   # records approval; neve
     `bundle_id`/`asc_app_id`/`team_id` + Apple/ASC + match secrets, `android` a Play
     service-account secret. Validate with `preflight --probe off` (config-only) then `preflight`
     (live) — see [Going live](#going-live).
+- `reconcile` prints the app slugs it covered as `apps`, ahead of the sweep report — `scanned`
+  counts release records, not apps.
 - `release run` exits non-zero on a dead release; `reconcile`/`maintenance` exit non-zero
   (and emit `::warning::` annotations) if any poller/provider errored. A `maintenance`
   source that simply isn't configured (no cert secret, no deadlines calendar, no Renovate
