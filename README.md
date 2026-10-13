@@ -126,6 +126,33 @@ command backs it:
 - **Config, not fixtures.** The repo ships one example app (`apps/aurora`) and a spine that
   discovers `apps/<slug>/app.yml` at runtime — you bring your own app catalogue as config.
 
+### Limits
+
+What the claims above do **not** cover, checked against the code rather than the intent:
+
+- **A failed gate kills a release, not a launch.** There are two gates — the build command's
+  exit code and the test command's exit code ([`gates.ts`](src/halyard/coordinator/gates.ts)).
+  When either is non-zero the release for *that surface* ends at the terminal `dead` state,
+  the deploy step never runs, and `release run` exits non-zero. Proof, on all four surfaces
+  and through the CLI: `npx vitest run tests/gate-fail-closed.test.ts`
+  ([`gate-fail-closed.test.ts`](tests/gate-fail-closed.test.ts)). A *launch* has no state of
+  its own: it is not marked failed, its other surfaces' releases carry on, and `halyard flip`
+  checks no release state — flipping the flag ON still takes the surviving surfaces `live`
+  (the `dead` one stays `dead`).
+- **`dead` is final only where the record survives.** The state machine rejects every
+  transition out of `dead`, and `release run` refuses to re-run a release whose record is
+  `dead` — no build, no test, no deploy, non-zero exit (same test file). But in `release.yml`
+  the commit-state step is skipped when `release run` fails, so a `dead` record written in CI
+  is **not** committed back to `main`: re-running that workflow starts from a fresh record and
+  judges the gates again. The red workflow run is the durable trace of a gated-out release.
+- **App registration is one directory of `<slug>/app.yml` files.** `reconcile`, `maintenance`,
+  `triage`, `preflight` and `payments verify` read `apps/` under the working directory unless
+  given `--apps-dir <dir>`; `release run`, `launch create` and `flip` take a single
+  `--app-config <path>` instead, and the web console reads `apps/` only. In a clean checkout
+  the catalogue is the one example app with no release records — `reconcile` reports
+  `"apps": ["aurora"]` and `"scanned": 0`. Acting across more than one app needs a Pro licence
+  or the self-host entitlement.
+
 ---
 
 ## Five invariants (held everywhere)
@@ -176,15 +203,15 @@ secrets; surface adapters share one interface so the coordinator is surface-agno
 ```
 halyard app init [--name <name>] [--slug <slug>] [--surfaces ios,android,web,desktop] [--force]   # scaffold apps/<slug>/app.yml (alias: onboard)
 halyard release run --app <slug> --surface <web|ios|android> --version <v> [--commit <sha>]
-halyard reconcile [--apps <slug,slug>]            # omit --apps to scan every apps/<slug>/app.yml
+halyard reconcile [--apps <slug,slug>] [--apps-dir <dir>]            # omit --apps to scan every apps/<slug>/app.yml
 halyard launch create --app <slug> --feature <f> --title <t> [--narrative <n>] [--tier launch] [--announce per_surface|first_surface|all_surfaces]
 halyard launch link --launch <id> --release <id>
 halyard flip --flag <key> --state on|off [--app <slug>]   # the human gate / launch moment
-halyard maintenance [--apps <slug,slug>]
-halyard triage [--apps <slug,slug>]               # out-of-band crash triage (see sentry-alert.yml)
+halyard maintenance [--apps <slug,slug>] [--apps-dir <dir>]
+halyard triage [--apps <slug,slug>] [--apps-dir <dir>]               # out-of-band crash triage (see sentry-alert.yml)
 halyard status [--stuck] [--release <id>]          # why each release is where it is (what it's waiting on)
-halyard payments verify [--apps <slug,slug>]       # verify payment-processing config (read-only)
-halyard preflight [--apps <slug,slug>] [--probe off]  # production-readiness across every third-party integration
+halyard payments verify [--apps <slug,slug>] [--apps-dir <dir>]       # verify payment-processing config (read-only)
+halyard preflight [--apps <slug,slug>] [--apps-dir <dir>] [--probe off]  # production-readiness across every third-party integration
 halyard queue [--all]                              # the approval queue (open by default)
 halyard approve --proposal <id> [--text "final copy"]   # records approval; never auto-posts
 ```
@@ -204,6 +231,11 @@ halyard approve --proposal <id> [--text "final copy"]   # records approval; neve
     `bundle_id`/`asc_app_id`/`team_id` + Apple/ASC + match secrets, `android` a Play
     service-account secret. Validate with `preflight --probe off` (config-only) then `preflight`
     (live) — see [Going live](#going-live).
+- `reconcile` prints the app slugs it covered as `apps`, ahead of the sweep report — `scanned`
+  counts release records, not apps.
+- `--apps-dir <dir>` (default `apps`) points `reconcile`, `maintenance`, `triage`, `preflight`
+  and `payments verify` at a catalogue kept elsewhere, e.g. a git-ignored private one:
+  `halyard reconcile --apps-dir apps.private`. `--apps <slug>` resolves inside the same directory.
 - `release run` exits non-zero on a dead release; `reconcile`/`maintenance` exit non-zero
   (and emit `::warning::` annotations) if any poller/provider errored. A `maintenance`
   source that simply isn't configured (no cert secret, no deadlines calendar, no Renovate
