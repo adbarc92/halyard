@@ -29,4 +29,19 @@ describe("reconcile CLI stdout shape", () => {
     expect(Array.isArray(out.applied)).toBe(true);
     expect(Array.isArray(out.errors)).toBe(true);
   });
+
+  it("with no --apps, discovers the registered apps in the tree and lists them", async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((m?: unknown) => { lines.push(String(m)); });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    // No --apps: the sweep is whatever apps/<slug>/app.yml the checkout ships — today the one
+    // example app. `scanned` stays 0 (no release records), so `apps` is what proves discovery.
+    const code = await dispatch(["reconcile", "--state-dir", stateDir]);
+    expect(code).toBe(0);
+
+    const out = JSON.parse(lines.join("\n"));
+    expect(out.apps).toEqual(["aurora"]);
+    expect(out.scanned).toBe(0);
+  });
 });

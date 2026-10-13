@@ -147,6 +147,9 @@ async function reconcileRun(argv: string[]): Promise<number> {
   console.log(
     JSON.stringify(
       {
+        // The apps this sweep covered. `scanned` counts release *records*, so on a project with
+        // no releases yet this list is the only evidence that discovery found anything.
+        apps: apps.map((a) => a.app.slug),
         ...r.reconcile,
         graduation_proposals: r.graduationProposals,
         publicity_fanouts: r.publicityFanouts,
