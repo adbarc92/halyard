@@ -112,7 +112,7 @@ npm run halyard -- status                                                 # why 
 Honest about what's proven versus what's stubbed, because a readiness claim only counts if a
 command backs it:
 
-- **Green and offline by default.** Build clean; the full suite (450+ tests) passes with no
+- **Green and offline by default.** Build clean; the full suite (470 tests in CI) passes with no
   network and no credentials — git-backed flag client, file publisher/notifier, deterministic
   drafters/classifiers. The entire spine is runnable and testable offline.
 - **Live clients sit behind ports.** App Store Connect, Google Play, Sentry, a remote flag
