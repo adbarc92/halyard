@@ -6,7 +6,7 @@ import type { CommandRunner, ReleaseContext } from "../surfaces/types.js";
 import { buildGate, testGate } from "./gates.js";
 import { appendTransition, newRelease } from "./record-store.js";
 import type { Backend } from "./ports.js";
-import { applyTransition } from "./state-machine.js";
+import { applyTransition, isTerminal } from "./state-machine.js";
 import { collectChangelog } from "./changelog.js";
 
 /**
@@ -17,7 +17,7 @@ import { collectChangelog } from "./changelog.js";
  *
  * For web the happy path is tagged → built → tested → uploaded, where `uploaded` is a
  * deployed preview awaiting the promote/flag-flip (M4). A failed build/test ends at
- * `dead` and never deploys.
+ * `dead` and never deploys — in that run or any re-run of the same release.
  */
 
 export interface RunReleaseInput {
@@ -67,6 +67,14 @@ export async function runRelease(input: RunReleaseInput): Promise<Release> {
   let release =
     (await input.backend.records.read(releaseId)) ??
     newRelease({ releaseId, app: slug, surface: input.surface, version: input.version });
+
+  // `dead` is terminal: a release a gate already killed is never re-run. Without this the
+  // gates below would judge only *this* run, and a now-green build+test would deploy while
+  // the record (which cannot leave `dead`) still said dead. Cut a new version instead.
+  if (isTerminal(release.state)) {
+    log(`[${releaseId}] DEAD — already terminal; not re-running (cut a new version)`);
+    return release;
+  }
 
   // Populate the changelog from Conventional Commits since the last tag (best-effort;
   // only on a fresh record, so a re-run doesn't rewrite it).

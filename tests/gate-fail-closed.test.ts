@@ -168,6 +168,33 @@ describe("a failed gate fails closed (end to end, through the `halyard release r
   });
 });
 
+describe.each(SURFACES)("`dead` stays dead: a re-run cannot deploy a gated-out release ($surface)", ({ surface, adapter, test }) => {
+  it("re-running a `dead` release whose gates would now pass runs nothing and deploys nothing", async () => {
+    const input = {
+      app: allSurfacesApp(),
+      surface,
+      version: "1.0.0",
+      commit: "abc1234",
+      backend: makeGitBackend({ stateDir }),
+      workdir: work,
+      now,
+    };
+    const dead = await runRelease({ ...input, runner: new FakeCommandRunner([{ match: test, exitCode: 1 }]) });
+    expect(dead.state).toBe("dead");
+
+    // Same release, and this time every command would exit 0.
+    const deploy = vi.spyOn(adapter.prototype, "deploy");
+    const rerunner = new FakeCommandRunner([]);
+    const rerun = await runRelease({ ...input, runner: rerunner });
+
+    expect(rerun.state).toBe("dead");
+    expect(rerun.transitions).toEqual(dead.transitions);
+    expect(releaseSucceeded(rerun.state)).toBe(false);
+    expect(deploy).not.toHaveBeenCalled();
+    expect(ran(rerunner)).toEqual([]); // no build, no test, no deploy
+  });
+});
+
 describe("`dead` stays dead: the launch moment cannot revive a gated-out release", () => {
   it("flipping the launch flag ON leaves a `dead` release `dead` (no transition applied)", async () => {
     const backend = makeGitBackend({ stateDir });
