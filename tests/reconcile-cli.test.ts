@@ -1,5 +1,5 @@
 // tests/reconcile-cli.test.ts
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -43,5 +43,34 @@ describe("reconcile CLI stdout shape", () => {
     const out = JSON.parse(lines.join("\n"));
     expect(out.apps).toEqual(["aurora"]);
     expect(out.scanned).toBe(0);
+  });
+
+  it("--apps-dir points discovery at a catalogue kept outside apps/", async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((m?: unknown) => { lines.push(String(m)); });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    // A private catalogue: one app that exists ONLY in this directory, never under apps/.
+    const appsDir = mkdtempSync(join(tmpdir(), "halyard-privapps-"));
+    try {
+      mkdirSync(join(appsDir, "borealis"));
+      writeFileSync(
+        join(appsDir, "borealis", "app.yml"),
+        readFileSync("apps/aurora/app.yml", "utf8").replace("{ name: Aurora, slug: aurora }", "{ name: Borealis, slug: borealis }"),
+        "utf8",
+      );
+
+      const discovered = await dispatch(["reconcile", "--state-dir", stateDir, "--apps-dir", appsDir]);
+      expect(discovered).toBe(0);
+      expect(JSON.parse(lines.join("\n")).apps).toEqual(["borealis"]);
+
+      // An explicit --apps slug resolves inside the same directory.
+      lines.length = 0;
+      const explicit = await dispatch(["reconcile", "--state-dir", stateDir, "--apps-dir", appsDir, "--apps", "borealis"]);
+      expect(explicit).toBe(0);
+      expect(JSON.parse(lines.join("\n")).apps).toEqual(["borealis"]);
+    } finally {
+      rmSync(appsDir, { recursive: true, force: true });
+    }
   });
 });

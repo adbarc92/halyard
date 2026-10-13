@@ -57,14 +57,18 @@ import { runOnboard } from "./onboard/init.js";
  * No arg-parser dependency — the surface is small and auditable.
  */
 
-/** Apps to operate on: the explicit --apps list, or every discovered apps/<slug>/app.yml. */
+/**
+ * Apps to operate on: the explicit --apps list, or every discovered <apps-dir>/<slug>/app.yml.
+ * --apps-dir (default `apps`) is the route to a catalogue kept outside the shipped tree.
+ */
 function loadApps(flags: Record<string, string>): AppConfig[] {
+  const appsDir = resolve(flags["apps-dir"] ?? "apps");
   const explicit = (flags.apps ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const slugs = explicit.length > 0 ? explicit : discoverAppSlugs(resolve("apps"));
-  return slugs.map((slug) => loadAppConfig(resolve(`apps/${slug}/app.yml`)));
+  const slugs = explicit.length > 0 ? explicit : discoverAppSlugs(appsDir);
+  return slugs.map((slug) => loadAppConfig(resolve(appsDir, slug, "app.yml")));
 }
 
 /**
@@ -319,7 +323,7 @@ async function probePayments(app: AppConfig): Promise<PaymentStatus> {
 async function paymentsCmd(argv: string[]): Promise<number> {
   const [sub, ...rest] = argv;
   if (sub !== "verify") {
-    console.error("usage: halyard payments verify [--apps <slug,slug>]");
+    console.error("usage: halyard payments verify [--apps <slug,slug>] [--apps-dir <dir>]");
     return 2;
   }
   const flags = parseFlags(rest);
@@ -661,15 +665,15 @@ export async function dispatch(args: string[]): Promise<number> {
   console.error(
     "usage:\n" +
       "  halyard release run --app <slug> --surface <surface> --version <v> [--commit <sha>]\n" +
-      "  halyard reconcile [--apps <slug,slug>]\n" +
+      "  halyard reconcile [--apps <slug,slug>] [--apps-dir <dir>]\n" +
       "  halyard launch create --app <slug> --feature <f> --title <t> [--narrative <n>] [--tier launch] [--announce ...]\n" +
       "  halyard launch link --launch <id> --release <id>\n" +
       "  halyard flip --flag <key> --state on|off [--app <slug>]\n" +
-      "  halyard maintenance [--apps <slug,slug>]\n" +
-      "  halyard triage [--apps <slug,slug>]\n" +
+      "  halyard maintenance [--apps <slug,slug>] [--apps-dir <dir>]\n" +
+      "  halyard triage [--apps <slug,slug>] [--apps-dir <dir>]\n" +
       "  halyard status [--stuck] [--release <id>]\n" +
-      "  halyard payments verify [--apps <slug,slug>]\n" +
-      "  halyard preflight [--apps <slug,slug>] [--probe off]\n" +
+      "  halyard payments verify [--apps <slug,slug>] [--apps-dir <dir>]\n" +
+      "  halyard preflight [--apps <slug,slug>] [--apps-dir <dir>] [--probe off]\n" +
       "  halyard license\n" +
       "  halyard queue [--all]\n" +
       "  halyard approve --proposal <id>\n" +
