@@ -1,7 +1,7 @@
 # Halyard
 
-**An event-driven release coordinator that models a multi-platform launch — iOS, Android,
-web, desktop — as one durable state machine.**
+**An event-driven release coordinator that models each platform's release in a launch — iOS,
+Android, web, desktop — as a durable state machine.**
 
 Shipping the same feature to four platforms isn't a pipeline. A pipeline is a single linear
 run, and that model breaks the moment mobile review enters the picture: no CI job can sit open
