@@ -1,7 +1,7 @@
 # Halyard
 
-**An event-driven release coordinator that models a multi-platform launch — iOS, Android,
-web, desktop — as one durable state machine.**
+**An event-driven release coordinator that models each platform's release in a launch — iOS,
+Android, web, desktop — as a durable state machine.**
 
 Shipping the same feature to four platforms isn't a pipeline. A pipeline is a single linear
 run, and that model breaks the moment mobile review enters the picture: no CI job can sit open
@@ -112,7 +112,7 @@ npm run halyard -- status                                                 # why 
 Honest about what's proven versus what's stubbed, because a readiness claim only counts if a
 command backs it:
 
-- **Green and offline by default.** Build clean; the full suite (450+ tests) passes with no
+- **Green and offline by default.** Build clean; the full suite (470 tests in CI) passes with no
   network and no credentials — git-backed flag client, file publisher/notifier, deterministic
   drafters/classifiers. The entire spine is runnable and testable offline.
 - **Live clients sit behind ports.** App Store Connect, Google Play, Sentry, a remote flag
