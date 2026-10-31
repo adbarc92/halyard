@@ -1,4 +1,3 @@
-import type { Release } from "../../contracts/release.schema.js";
 import type { ReconcileSource, TransitionProposal } from "../reconcile.js";
 import type { PlayClient } from "./play-client.js";
 

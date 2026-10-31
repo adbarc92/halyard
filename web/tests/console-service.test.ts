@@ -47,7 +47,7 @@ describe("console service reads", () => {
 
   it("listReleaseStatuses projects each release via summarizeRelease", () => {
     const { root, stateDir } = seedProject();
-    let r = newRelease({ releaseId: "rel_demo_web_1.0.0", app: "demo", surface: "web", version: "1.0.0" });
+    const r = newRelease({ releaseId: "rel_demo_web_1.0.0", app: "demo", surface: "web", version: "1.0.0" });
     writeRelease(stateDir, r);
     const svc = createConsoleService({ root, now: fixedClock() });
     const statuses = svc.listReleaseStatuses();
