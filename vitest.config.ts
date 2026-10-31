@@ -18,6 +18,9 @@ export default defineConfig({
     // Coverage gate (enforced in CI via `npm run test:coverage`). Thresholds sit just below
     // current coverage to prevent regression without noise; raise them as coverage grows.
     // Barrels (index.ts) are pure re-exports, excluded from the denominator.
+    // Vitest 4+ maps v8 coverage through the AST, which counts statements and branches
+    // differently from 2.x (same tests and code: statements 89.1% -> 84.4%, branches
+    // 88.4% -> 75.0%), so those two thresholds were reset just below the new figures.
     coverage: {
       provider: "v8",
       include: ["src/halyard/**/*.ts"],
@@ -25,8 +28,8 @@ export default defineConfig({
       reporter: ["text-summary", "json-summary"],
       thresholds: {
         lines: 85,
-        statements: 85,
-        branches: 80,
+        statements: 84,
+        branches: 74,
         functions: 87,
       },
     },
