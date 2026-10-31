@@ -1,6 +1,6 @@
 // tests/service-client.test.ts
 import { describe, expect, it } from "vitest";
-import { ServiceHttpClient, ServiceHttpError } from "../src/halyard/coordinator/service/client.js";
+import { ServiceHttpClient } from "../src/halyard/coordinator/service/client.js";
 
 /** A fetch double that records the request and returns a canned Response. */
 function cannedFetch(res: Response, sink?: (url: string, init: RequestInit) => void) {

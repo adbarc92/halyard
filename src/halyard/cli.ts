@@ -12,7 +12,6 @@ import { SURFACES, SemverSchema, type Surface } from "./config/primitives.js";
 import type { Release } from "./contracts/release.schema.js";
 import { ShellCommandRunner } from "./surfaces/command-runner.js";
 import { releasePath } from "./coordinator/record-store.js";
-import type { Backend } from "./coordinator/ports.js";
 import { summarizeRelease } from "./coordinator/status.js";
 import { assessReadiness, isReady, type ReadinessReport } from "./coordinator/preflight.js";
 import { approveProposal } from "./coordinator/approve.js";

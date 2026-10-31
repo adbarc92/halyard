@@ -21,7 +21,7 @@ export function makeFakeServiceFetch() {
     const body = init.body ? JSON.parse(init.body) : undefined;
     const seg = path.split("/").filter(Boolean); // e.g. ["releases","rel_1"] or ["ledgers","l","announced"]
 
-    const single = (map: Map<string, unknown>, idKey: string) => {
+    const single = (map: Map<string, unknown>, _idKey: string) => {
       const id = decodeURIComponent(seg[1]!);
       if (method === "GET") return map.has(id) ? json(map.get(id)) : new Response(null, { status: 404 });
       if (method === "PUT") { map.set(id, body); return noContent(); }

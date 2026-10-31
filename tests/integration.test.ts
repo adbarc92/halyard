@@ -9,7 +9,6 @@ import { bindReleaseToLaunch, linkRelease, newLaunch, writeLaunch } from "../src
 import { ascReviewSource, type AscClient, type ReviewStatus } from "../src/halyard/coordinator/sources/asc-review.js";
 import { flagPollSource } from "../src/halyard/coordinator/sources/flag-poll.js";
 import { FlagFileClient } from "../src/halyard/flags/file-client.js";
-import type { Release } from "../src/halyard/contracts/release.schema.js";
 
 let stateDir: string;
 let backend: ReturnType<typeof makeGitBackend>;

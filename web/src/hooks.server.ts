@@ -18,7 +18,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (!consoleToken) {
     // No-token mode: loopback-only, and never trust a peer when a proxy is in front.
     const forwarded = [...event.request.headers.keys()].some((k) => k.startsWith("x-forwarded-"));
-    let addr = "";
+    let addr: string;
     try { addr = event.getClientAddress(); } catch { addr = ""; }
     if (!forwarded && isLoopbackAddress(addr)) {
       event.locals.authed = true;
