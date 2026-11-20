@@ -1,6 +1,5 @@
 import type { Release } from "../contracts/release.schema.js";
 import type { ReleaseState } from "../contracts/state.js";
-import { scanReleaseIds } from "./record-store.js";
 import type { Backend } from "./ports.js";
 import { applyTransition } from "./state-machine.js";
 

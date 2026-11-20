@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { validateAppConfig } from "../src/halyard/config/loader.js";
 import {
   DryRunMergeClient,
